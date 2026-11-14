@@ -1,0 +1,16 @@
+'use client';
+import {useState,useEffect} from 'react';
+import {createSupabaseBrowser} from '../../lib/supabase/browser';
+import {safeReturnTo} from '../../server/auth-path';
+export default function Login(){
+ const [mode,setMode]=useState('signin'),[email,setEmail]=useState(''),[password,setPassword]=useState(''),[busy,setBusy]=useState(false),[message,setMessage]=useState(''),[error,setError]=useState('');
+ useEffect(()=>{const q=new URLSearchParams(location.search);if(q.get('mode')==='update')setMode('update');if(q.has('error'))setError('The verification link expired or could not be used. Please try again.');},[]);
+ async function submit(e:React.FormEvent){e.preventDefault();setBusy(true);setError('');setMessage('');try{
+  const supabase=createSupabaseBrowser(),next=safeReturnTo(new URLSearchParams(location.search).get('next'));
+  if(mode==='signin'){const {error}=await supabase.auth.signInWithPassword({email:email.trim(),password});if(error)throw error;location.assign(next);}
+  else if(mode==='signup'){const {error}=await supabase.auth.signUp({email:email.trim(),password,options:{emailRedirectTo:location.origin+'/auth/callback?next='+encodeURIComponent(next)}});if(error)throw error;setMessage('Check your email to verify your account. Use the email address your Admin invited.');}
+  else if(mode==='reset'){const {error}=await supabase.auth.resetPasswordForEmail(email.trim(),{redirectTo:location.origin+'/auth/callback?next='+encodeURIComponent('/login?mode=update')});if(error)throw error;setMessage('If this account exists, a password reset link has been requested. Check your email.');}
+  else {const {error}=await supabase.auth.updateUser({password});if(error)throw error;location.assign('/');}
+ }catch(e){setError(e instanceof Error?e.message:'Sign-in failed. Please retry.');}finally{setBusy(false);}}
+ return <main className="auth-page"><section className="cloud-card auth-card"><img src="/jobsight-logo.jpeg" width="84" height="84" alt="JobSight"/><h1>{mode==='signup'?'Create your account':mode==='reset'?'Reset password':mode==='update'?'Choose a new password':'Sign in to JobSight'}</h1><p>Construction schedules. One connected team.</p>{error&&<p role="alert" className="error">{error}</p>}{message&&<p role="status">{message}</p>}<form onSubmit={submit}>{mode!=='update'&&<label>Email<input type="email" autoComplete="email" required value={email} onChange={e=>setEmail(e.target.value)}/></label>}{mode!=='reset'&&<label>Password<input type="password" autoComplete={mode==='signin'?'current-password':'new-password'} minLength={mode==='signin'?1:12} required value={password} onChange={e=>setPassword(e.target.value)}/></label>}<button className="primary" disabled={busy}>{busy?'Please wait…':mode==='signin'?'Sign in':mode==='signup'?'Create account':mode==='reset'?'Send reset link':'Save password'}</button></form><div className="auth-links"><button type="button" onClick={()=>{setMode(mode==='signin'?'signup':'signin');setError('');setMessage('');}}>{mode==='signin'?'Invited? Create an account':'Back to sign in'}</button>{mode==='signin'&&<button type="button" onClick={()=>setMode('reset')}>Forgot password?</button>}</div><p className="cloud-foot">Your Admin controls workspace access. Creating an account does not grant access to any company.</p></section></main>;
+}

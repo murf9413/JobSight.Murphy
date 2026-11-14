@@ -7,3 +7,11 @@ dist/
 .wrangler/
 .sites-runtime/
 .env*
+
+!.env.example
+*.tsbuildinfo
+.vercel/
+.supabase/
+
+# Supabase CLI local state
+supabase/.temp/

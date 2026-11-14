@@ -1,0 +1,7 @@
+import React,{useState,useEffect,useCallback} from 'react';
+export default function LiveVendorInbox({companyId,api,onOpen}){
+ const[data,setData]=useState([]),[error,setError]=useState('');
+ const refresh=useCallback(async()=>setData((await api('vendorInbox&companyId='+encodeURIComponent(companyId))).updates),[companyId,api]);
+ useEffect(()=>{refresh().catch(e=>setError(e.message));const timer=setInterval(()=>refresh().catch(()=>{}),60000);return()=>clearInterval(timer)},[refresh]);
+ return <details className="cloud-card vendor-review"><summary>Vendor notes & nudges · {data.filter(v=>!v.completed).length} to review</summary>{error&&<p role="alert" className="error">{error}</p>}{data.map(v=><article key={v.id} className={v.kind==='note'?'vendor-unread live-vendor-step':'live-vendor-step'}><strong>{v.projectName} · {v.stepName}</strong><p>{v.kind==='nudge'?'👉🏻👷🏻‍♂️ Vendor requests completion review.':v.body}</p><small>{new Date(v.created_at).toLocaleString()}{v.completed?' · Step complete':''}</small><div className="vendor-task-actions"><button onClick={()=>onOpen(v.projectId,v.stepId)}>Open step</button><button onClick={async()=>{try{await api('readVendorUpdate',{companyId,updateId:v.id});await refresh()}catch(e){setError(e.message)}}}>Mark reviewed</button></div></article>)}{!data.length&&<p>No unread notes or nudges.</p>}<p>Review the work in its schedule before completing a step. Completion does not send payment.</p></details>;
+}

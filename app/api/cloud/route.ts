@@ -1,6 +1,10 @@
-import{env}from'cloudflare:workers';
-import{getChatGPTUser}from'../../chatgpt-auth';
-import{handleCloud}from'../../../server/cloud.js';
+import {createSupabaseServer} from '../../../lib/supabase/server';
+import {handleSupabaseCloud} from '../../../server/supabase-cloud.js';
 export const dynamic='force-dynamic';
-export async function GET(request:Request){return handleCloud(request,env.DB,await getChatGPTUser())}
-export async function POST(request:Request){return handleCloud(request,env.DB,await getChatGPTUser())}
+export const runtime='nodejs';
+async function handle(request:Request){
+ try{const supabase=await createSupabaseServer();const {data:{user},error}=await supabase.auth.getUser();return handleSupabaseCloud(request,supabase,error?null:user);}
+ catch{return Response.json({error:'Cloud service is unavailable. Try again.'},{status:503,headers:{'Cache-Control':'no-store'}});}
+}
+export const GET=handle;
+export const POST=handle;
