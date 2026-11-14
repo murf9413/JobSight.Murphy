@@ -1,0 +1,12 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {constructionDUC,constructionSpan} from './duc.js';
+const steps=end=>[{id:'start',name:'Dig / Start Date',day:1,duration:1},{id:'end',name:'Closing',day:end,duration:1}];
+const state=end=>({base:'2026-10-01',tasks:steps(end),ducTemplate:{base:'2026-10-01',tasks:steps(101)}});
+test('DUC is signed allowance minus calendar span, including weekends',()=>{assert.equal(constructionDUC(state(91)).value,10);assert.equal(constructionDUC(state(101)).value,0);assert.equal(constructionDUC(state(111)).value,-10);assert.equal(constructionDUC(state(101)).actual,100)});
+test('start edits change span; closing wins over post-closing work',()=>{const s=state(101);s.tasks[0].day=11;s.tasks.push({name:'Warranty',day:200,duration:1});assert.equal(constructionDUC(s).value,10)});
+test('completed closing stops projected label and missing dates are unavailable',()=>{const s=state(101);s.tasks[1].completed=true;assert.equal(constructionDUC(s).projected,false);assert.equal(constructionSpan([],s.base),null);assert.equal(constructionDUC({...s,tasks:[]}),null)});
+test('baseline survives schedule changes and leap day counts',()=>{const s=state(101);const before=JSON.stringify(s.ducTemplate);s.tasks[1].day=105;assert.equal(constructionDUC(s).value,-4);assert.equal(JSON.stringify(s.ducTemplate),before);assert.equal(constructionSpan(steps(3),'2024-02-28').finish,'2024-03-01')});
+import {validateState} from '../server/validation.js';
+import {headers,ruleHeaders,parseTemplate} from './template.js';
+test('legacy template headers still import',()=>{const old=headers.map(h=>h.replace(/Step/g,'Task'));const row=['a','Excavate',1,1,'Labor','Interior','','No','No','No','No',''];const oldRules=ruleHeaders.map(h=>h.replace(/Step/g,'Task'));assert.equal(parseTemplate([old,row],[oldRules],{tasks:[],vendors:[]}).tasks[0].name,'Excavate')});
+test('malformed stored DUC baselines are rejected',()=>{const s={...state(101),version:1,workweekVersion:1,project:{lot:'',address:''},vendors:[],rules:[]};s.tasks.forEach(t=>t.type='Milestone');s.ducTemplate.tasks.forEach(t=>t.type='Milestone');assert.equal(validateState(s),s);assert.throws(()=>validateState({...s,ducTemplate:{base:s.base,tasks:[{name:'Bad'}]}}),/step/)});

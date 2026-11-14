@@ -1,0 +1,3 @@
+export function forecastDays(periods,today){
+ const days=new Map();for(const p of periods){const date=p.startTime.slice(0,10);if(date<today)continue;const d=days.get(date)||{date,high:null,low:null,rain:null,summary:''};const temp=typeof p.temperature==='number'?(p.temperatureUnit==='C'?p.temperature*9/5+32:p.temperature):null;if(p.isDaytime){d.high=temp;d.summary=p.shortForecast}else{d.low=temp;if(!d.summary)d.summary=p.shortForecast}const rain=p.probabilityOfPrecipitation?.value;if(typeof rain==='number')d.rain=Math.max(d.rain??0,rain);days.set(date,d)}return [...days.values()].slice(0,5).map(d=>({...d,avg:d.high!==null&&d.low!==null?(d.high+d.low)/2:null}));
+}

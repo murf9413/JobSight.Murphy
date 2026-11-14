@@ -1,0 +1,6 @@
+import test from'node:test';import assert from'node:assert/strict';import{openingDate,weekStart,isOverdue,focusRange}from'./calendarFocus.js';
+const tasks=[{id:'1',name:'Excavate',day:1,duration:1,completed:true},{id:'2',name:'Framing',day:8,duration:5},{id:'3',name:'Closing',day:30,duration:1}];const base='2026-10-19';
+test('future opens excavation; active opens today regardless of first completion',()=>{assert.equal(openingDate(tasks,base,'2026-10-10'),base);assert.equal(openingDate(tasks,base,'2026-10-28'),'2026-10-28');assert.equal(weekStart('2026-10-25'),'2026-10-19')});
+test('finished opens closing; missed closing alone does not mean finished',()=>{assert.equal(openingDate(tasks,base,'2027-01-01'),'2027-01-01');assert.equal(openingDate(tasks.map(t=>({...t,completed:true})),base,'2027-01-01'),'2026-11-17')});
+test('overdue uses working finish, excludes completed, ongoing and due today',()=>{assert.equal(isOverdue(tasks[0],base,'2026-11-01'),false);assert.equal(isOverdue(tasks[1],base,'2026-10-28'),false);assert.equal(isOverdue(tasks[1],base,'2026-10-30'),false);assert.equal(isOverdue(tasks[1],base,'2026-10-31'),true)});
+test('focus outside job range includes its current week without infinite loading',()=>{assert.deepEqual(focusRange({start:'2026-10-12',end:'2026-12-01'},'2027-01-04'),{start:'2026-10-12',end:'2027-01-11'})});

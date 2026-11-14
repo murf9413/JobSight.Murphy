@@ -1,0 +1,5 @@
+import{daysBetween}from'./dates.js';
+import{applyRules}from'./rules.js';
+export function portalURL(value){try{const u=new URL(value);return ['https:','http:'].includes(u.protocol)?u.href:''}catch{return ''}}
+export function inspectionTask(t){return t.type==='Inspection'||(/\b(soil|fnd|foundation|slab|rough|insul|deck.?pier|final)\b/i.test(t.name)&&/insp/i.test(t.name))}
+export function bulkTasks(tasks,ids,action,date,base,rules=[]){const selected=new Set(ids);if(action==='lock'||action==='unlock')return tasks.map(t=>selected.has(t.id)?{...t,locked:action==='lock'}:t);if(action==='complete')return tasks.map(t=>selected.has(t.id)?{...t,completed:true}:t);if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||isNaN(Date.parse(date)))throw Error('Choose a date.');const day=daysBetween(base,date)+1;const next=tasks.map(t=>selected.has(t.id)&&!t.locked?{...t,day,calendarDuration:false}:t);const ruled=applyRules(next,rules,base);if(ruled.some((t,i)=>t.day!==next[i].day))throw Error('This date conflicts with step pairing rules. Select the paired steps too, or update their rules first.');return next}

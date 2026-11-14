@@ -1,0 +1,3 @@
+import{test}from'node:test';import assert from'node:assert/strict';import{scheduleBounds,schedulesCSV}from'./exportModel.js';
+test('view bounds use actual dig date and closing plus two weeks',()=>{assert.deepEqual(scheduleBounds([{id:'1',day:3,name:'Dig',duration:1},{id:'close',name:'Close',day:30,duration:1}], '2026-10-19'),{start:'2026-10-14',end:'2026-12-02'})});
+test('CSV quotes multiline notes and neutralizes formulas',()=>{const csv=schedulesCSV([{name:'=Bad()',state:{base:'2026-10-19',project:{lot:'BK0004',unit:'B'},vendors:[],tasks:[{id:'1',name:'Dig',day:1,duration:1,note:'a,"b"\nline'}]}}]);assert.ok(csv.includes('"\'=Bad()"'));assert.ok(csv.includes('"a,""b""\nline"'));assert.ok(csv.includes('"2026-10-19"'))});

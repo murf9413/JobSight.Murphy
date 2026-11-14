@@ -1,0 +1,2 @@
+import {dateFor} from './dates.js';
+export function reconcileStatuses(previous,next){return {...next,tasks:next.tasks.map(t=>{const old=previous.tasks.find(x=>x.id===t.id);if(old&&(dateFor(previous.base,old.day)!==dateFor(next.base,t.day)||old.duration!==t.duration||old.vendorId!==t.vendorId||!!old.workHolidays!==!!t.workHolidays||!!old.allowNonWorking!==!!t.allowNonWorking))return {...t,confirmed:false,acceptedFor:null};return t.confirmed?t:{...t,acceptedFor:null}})}}
